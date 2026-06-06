@@ -3,7 +3,6 @@
 import { SectionCard } from "@/components/shared/layout/SectionCard";
 import Input from "@/components/shared/input/Input";
 import Slider from "@/components/shared/input/Slider";
-import Select from "@/components/shared/input/Select";
 import type { RichTextState } from "../types";
 
 type Props = { state: RichTextState; update: <K extends keyof RichTextState>(key: K, value: RichTextState[K]) => void };
@@ -11,23 +10,6 @@ type Props = { state: RichTextState; update: <K extends keyof RichTextState>(key
 export default function MetadataSection({ state, update }: Props) {
   return <SectionCard title="Metadata" subtitle="Metadata controls for native richtext generation."><Input label="id" value={state.id} onChange={(value) => update("id", value)} />
 <Input label="aria-label" value={state.ariaLabel} onChange={(value) => update("ariaLabel", value)} />
-<Select label="Role" value={state.role} options={[
-  "region",
-  "group",
-  "status",
-  "alert",
-  "dialog",
-  "menu",
-  "menubar",
-  "navigation",
-  "list",
-  "tree",
-  "table",
-  "tablist",
-  "form",
-  "textbox",
-  "img",
-  "application"
-]} onChange={(value) => update("role", value)} />
+<div className="rounded-2xl border p-4 text-sm" style={{ borderColor: "var(--border)", color: "var(--muted)" }}>Semantic role is fixed to textbox for the editable surface.</div>
 <Slider label="tabIndex" value={state.tabIndex} min={0} max={4} step={1} onChange={(value) => update("tabIndex", value)} /></SectionCard>;
 }

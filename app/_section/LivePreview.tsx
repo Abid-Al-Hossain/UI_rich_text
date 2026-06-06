@@ -4,21 +4,77 @@ import type { CSSProperties } from "react";
 import type { RichTextState } from "../types";
 
 function shell(state: RichTextState): CSSProperties {
-  return { width: state.width, minHeight: state.height, padding: state.padding, gap: state.gap, borderRadius: state.radius, border: `${state.borderWidth}px solid ${state.border}`, boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow}px rgba(0,0,0,.28)`, background: state.background, color: state.foreground, fontFamily: state.fontFamily, opacity: state.disabled ? 0.55 : 1 };
+  return {
+    width: state.width,
+    minHeight: state.height,
+    padding: state.padding,
+    display: "grid",
+    gap: state.gap,
+    borderRadius: state.radius,
+    border: `${state.borderWidth}px solid ${state.border}`,
+    boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow}px rgba(0,0,0,.28)`,
+    background: state.background,
+    color: state.foreground,
+    fontFamily: state.fontFamily,
+    opacity: state.disabled ? 0.55 : 1,
+  };
 }
 
 export default function LivePreview({ state }: { state: RichTextState }) {
-  const model = state as Record<string, unknown>;
-  const numberValue = (key: string, fallback: number) => typeof model[key] === "number" ? model[key] : fallback;
-  const stringValue = (key: string, fallback: string) => typeof model[key] === "string" ? model[key] : fallback;
-  const boolValue = (key: string) => typeof model[key] === "boolean" ? model[key] : false;
-  const count = numberValue("itemCount", numberValue("rowCount", numberValue("slideCount", numberValue("imageCount", numberValue("filterCount", numberValue("controlCount", 5))))));
-  const items = Array.from({ length: count }, (_, index) => index + 1);
-  const badge = (text: string) => <span className="rounded-full border px-3 py-1 text-xs" style={{ borderColor: state.border, color: state.accent }}>{text}</span>;
-  const panel = shell(state);
-  if ("chartType" in model) return <section role="img" aria-label={state.ariaLabel} style={panel} className="grid content-center"><h3 style={{ fontSize: state.titleSize }}>{state.title}</h3><div className="flex items-end gap-3">{items.map((item) => <div key={item} className="w-10 rounded-t-xl" style={{ height: 36 + item * 18, background: state.accent }} />)}</div></section>;
-  if ("src" in model && ("showTimeline" in model || "showCaptions" in model)) return <section role={state.role} aria-label={state.ariaLabel} style={panel} className="grid content-center"><h3>{state.title}</h3>{"showTimeline" in model ? <audio controls muted={boolValue("muted")} loop={boolValue("loop")} preload={stringValue("preload", "metadata")} className="w-full" /> : <video controls muted={boolValue("muted")} loop={boolValue("loop")} preload={stringValue("preload", "metadata")} poster={stringValue("poster", "")} className="w-full rounded-xl bg-black/40" />}</section>;
-  if (state.role === "dialog") return <div className="grid place-items-center"><section role="dialog" aria-label={state.ariaLabel} style={panel} className="grid"><h3 style={{ fontSize: state.titleSize }}>{state.title}</h3><p style={{ color: stringValue("muted", "#94a3b8") }}>{state.description}</p><div className="flex gap-2"><button type="button" className="rounded-xl px-4 py-2" style={{ background: state.accent, color: "#020617" }}>Action</button><button type="button" className="rounded-xl border px-4 py-2" style={{ borderColor: state.border }}>Cancel</button></div></section></div>;
-  if (state.role === "table") return <table role="table" aria-label={state.ariaLabel} style={panel}><caption>{stringValue("caption", state.title)}</caption><tbody>{items.map((item) => <tr key={item}><th className="p-2 text-left">Row {item}</th><td className="p-2">{state.label}</td></tr>)}</tbody></table>;
-  return <section id={state.id} role={state.role} aria-label={state.ariaLabel} tabIndex={state.tabIndex} style={panel} className="grid content-center"><h3 style={{ fontSize: state.titleSize, fontWeight: state.fontWeight }}>{state.title}</h3><p style={{ color: stringValue("muted", "#94a3b8"), fontSize: state.bodySize }}>{state.description}</p><div className="flex flex-wrap gap-2">{items.map((item) => badge(`${state.label} ${item}`))}</div><p className="text-xs" style={{ color: stringValue("muted", "#94a3b8") }}>{state.helper} · {stringValue("previewState", "default")}</p></section>;
+  const isEmpty = state.previewState === "empty";
+  const isFocused = state.previewState === "focus" || state.previewState === "active";
+  const descriptionId = `${state.id}-description`;
+  const countId = `${state.id}-count`;
+  const words = Math.max(1, Math.round(state.characterCount / 6));
+  const toolbarButtons = [
+    ...(state.showMarks ? ["Bold", "Italic", "Link"] : []),
+    ...(state.showLists ? ["Bulleted list", "Numbered list"] : []),
+  ];
+
+  return (
+    <section id={state.id} aria-label={state.ariaLabel} style={shell(state)}>
+      <header style={{ display: "grid", gap: 6 }}>
+        <span style={{ color: state.accent, fontSize: 12, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" }}>{state.toolbarMode} editor</span>
+        <h3 style={{ margin: 0, fontSize: state.titleSize, fontWeight: state.fontWeight }}>{state.title}</h3>
+        <p id={descriptionId} style={{ margin: 0, color: state.muted, fontSize: state.bodySize }}>{state.description}</p>
+      </header>
+
+      {state.toolbarMode !== "none" && (
+        <div role="toolbar" aria-label={`${state.label} formatting toolbar`} style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {toolbarButtons.map((button) => (
+            <button key={button} type="button" disabled={state.disabled} aria-pressed={button === "Bold" || button === "Bulleted list"} style={{ border: `1px solid ${state.border}`, borderRadius: 999, background: button === "Bold" ? state.accent : "transparent", color: button === "Bold" ? state.background : state.foreground, padding: "7px 11px", fontSize: 12, fontWeight: 700 }}>
+              {button}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div
+        role="textbox"
+        aria-label={state.ariaLabel}
+        aria-describedby={`${descriptionId} ${countId}`}
+        aria-multiline="true"
+        contentEditable={!state.disabled}
+        suppressContentEditableWarning
+        tabIndex={state.disabled ? -1 : state.tabIndex}
+        data-placeholder={state.placeholder}
+        style={{ minHeight: Math.max(130, state.height - 150), border: `${Math.max(1, state.borderWidth)}px solid ${isFocused ? state.accent : state.border}`, borderRadius: Math.max(12, state.radius - 8), background: "rgba(255,255,255,.06)", outline: isFocused ? `3px solid ${state.accent}33` : "none", padding: Math.max(14, Math.round(state.padding * 0.7)), color: state.foreground, fontSize: state.bodySize, lineHeight: 1.7 }}
+      >
+        {isEmpty ? (
+          <span style={{ color: state.muted }}>{state.placeholder}</span>
+        ) : (
+          <>
+            <p style={{ margin: "0 0 10px" }}><strong>{state.label}</strong> starts with a {state.blockType} block and keeps editing affordances visible.</p>
+            {state.showMarks && <p style={{ margin: "0 0 10px" }}>Formatting preview: <strong>bold</strong>, <em>italic</em>, and <a href="#" style={{ color: state.accent }}>inline link</a>.</p>}
+            {state.showLists && <ul style={{ margin: 0, paddingLeft: 22 }}><li>Semantic list content</li><li>Keyboard-editable surface</li></ul>}
+          </>
+        )}
+      </div>
+
+      <footer style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12, color: state.muted, fontSize: 12 }}>
+        <span>{state.helper}</span>
+        <span id={countId} aria-live="polite">{state.characterCount} characters / {words} words</span>
+      </footer>
+    </section>
+  );
 }
