@@ -38,7 +38,7 @@ export function buildReactCode(state: RichTextState) {
     "      {state.toolbarMode !== \"none\" && (",
     "        <div role=\"toolbar\" aria-label={state.label + \" formatting toolbar\"} style={{ display: \"flex\", flexWrap: \"wrap\", gap: 8 }}>",
     "          {toolbarButtons.map((button) => (",
-    "            <button key={button} type=\"button\" disabled={state.disabled} aria-pressed={button === \"Bold\" || button === \"Bulleted list\"} style={{ border: \"1px solid \" + state.border, borderRadius: 999, background: button === \"Bold\" ? state.accent : \"transparent\", color: button === \"Bold\" ? state.background : state.foreground, padding: \"7px 11px\", fontSize: 12, fontWeight: 700 }}>",
+    "            <button key={button} type=\"button\" disabled={state.disabled} aria-pressed={button === \"Bold\" || button === \"Bulleted list\"} style={{ border: \"1px solid \" + state.border, borderRadius: 999, background: button === \"Bold\" ? state.accent : \"transparent\", color: button === \"Bold\" ? state.background : state.foreground, padding: \"7px 11px\", fontSize: 12, fontWeight: 700, transition: state.motion ? \"background 0.15s ease, color 0.15s ease\" : \"none\" }}>",
     "              {button}",
     "            </button>",
     "          ))}",
